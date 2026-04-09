@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SignBridge — ASL Real-Time Translator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #080b12;
+      --surface: #0e1320;
+      --surface2: #161d2e;
+      --surface3: #1d2840;
+      --accent: #00d4ff;
+      --accent-dim: rgba(0, 212, 255, 0.15);
+      --green: #00e5a0;
+      --purple: #8b5cf6;
+      --text: #dce8f5;
+      --muted: #5a7080;
+      --border: rgba(255,255,255,0.07);
+      --border-accent: rgba(0, 212, 255, 0.25);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Loading Screen ───────────────────────────────────── */
+    #loadingScreen {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.2rem;
+      z-index: 999;
+      transition: opacity 0.5s;
+    }
+
+    #loadingScreen.hide { opacity: 0; pointer-events: none; }
+
+    .loading-logo {
+      font-size: 2.8rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+    .loading-logo span { color: var(--accent); }
+
+    .loading-sub {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.08em;
+    }
+
+    .loader-bar-wrap {
+      width: 280px;
+      height: 2px;
+      background: var(--surface3);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+
+    #loaderBar {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    #loadingMsg {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    /* ── Header ───────────────────────────────────────────── */
+    header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.9rem 1.8rem;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .logo em { color: var(--accent); font-style: normal; }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 12px;
+      border-radius: 100px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--muted);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: background 0.3s;
+    }
+    .status-dot.live { background: var(--green); animation: pulse-dot 1.8s infinite; }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+
+    .mode-badge {
+      font-size: 0.72rem;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 4px 10px;
+      border-radius: 4px;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid var(--border-accent);
+    }
+
+    /* ── Layout ───────────────────────────────────────────── */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 370px;
+      overflow: hidden;
+    }
+
+    /* ── Camera Panel ─────────────────────────────────────── */
+    .camera-wrap {
+      position: relative;
+      background: #000;
+      overflow: hidden;
+    }
+
+    #video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+
+    #canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      transform: scaleX(-1);
+    }
+
+    /* Scan line animation */
+    .scanline {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      animation: scan 3s linear infinite;
+      opacity: 0.4;
+    }
+
+    @keyframes scan {
+      0% { top: 0%; }
+      100% { top: 100%; }
+    }
+
+    /* Corner brackets */
+    .corner {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      border-color: var(--accent);
+      border-style: solid;
+      opacity: 0.5;
+    }
+    .corner.tl { top: 16px; left: 16px; border-width: 2px 0 0 2px; }
+    .corner.tr { top: 16px; right: 16px; border-width: 2px 2px 0 0; }
+    .corner.bl { bottom: 16px; left: 16px; border-width: 0 0 2px 2px; }
+    .corner.br { bottom: 16px; right: 16px; border-width: 0 2px 2px 0; }
+
+    /* Big letter overlay */
+    .gesture-box {
+      position: absolute;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+    }
+
+    #bigLetter {
+      font-size: 9rem;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+      letter-spacing: -0.05em;
+      text-shadow:
+        0 0 20px rgba(0, 212, 255, 0.6),
+        0 0 60px rgba(0, 212, 255, 0.2);
+      min-width: 120px;
+      display: block;
+      transition: transform 0.1s, color 0.15s;
+    }
+
+    #bigLetter.confirmed {
+      color: var(--green);
+      text-shadow: 0 0 30px rgba(0, 229, 160, 0.7);
+    }
+
+    /* Confirm progress ring */
+    .ring-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.3rem;
+    }
+
+    #confirmRing {
+      width: 48px;
+      height: 48px;
+      transform: rotate(-90deg);
+    }
+
+    #confirmArc {
+      stroke: var(--accent);
+      stroke-width: 3;
+      fill: none;
+      stroke-linecap: round;
+      stroke-dasharray: 126;
+      stroke-dashoffset: 126;
+      transition: stroke-dashoffset 0.08s linear;
+    }
+
+    /* ── Sidebar ──────────────────────────────────────────── */
+    .sidebar {
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Word panel */
+    .word-panel {
+      padding: 1.3rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-tag {
+      font-size: 0.68rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+
+    #wordDisplay {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      color: var(--text);
+      min-height: 2.5rem;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 2px;
+    }
+
+    .letter-chip {
+      display: inline-block;
+      animation: popIn 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .cursor-blink {
+      display: inline-block;
+      width: 2px;
+      height: 1.8rem;
+      background: var(--accent);
+      margin-left: 3px;
+      vertical-align: middle;
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* Sentence panel */
+    .sentence-panel {
+      flex: 1;
+      padding: 1.3rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #sentenceDisplay {
+      font-size: 0.95rem;
+      line-height: 1.7;
+      color: var(--text);
+      flex: 1;
+    }
+
+    .word-token {
+      display: inline-block;
+      margin: 2px 4px 2px 0;
+      padding: 2px 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+    }
+
+    .placeholder-text {
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-style: italic;
+    }
+
+    /* How to use */
+    .tips {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 1rem;
+      line-height: 1.8;
+      border-top: 1px solid var(--border);
+      padding-top: 0.8rem;
+    }
+
+    /* Controls */
+    .controls {
+      padding: 1.2rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0.68rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      letter-spacing: 0.01em;
+    }
+
+    .btn:hover {
+      border-color: var(--border-accent);
+      background: var(--surface3);
+    }
+
+    .btn-speak {
+      background: var(--accent);
+      color: #05111a;
+      border-color: var(--accent);
+      font-size: 0.92rem;
+    }
+    .btn-speak:hover { opacity: 0.88; background: var(--accent); }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem;
+    }
+
+    /* Alphabet ref */
+    .alpha-ref {
+      padding: 0.8rem 1.5rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .alpha-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 0.5rem;
+    }
+
+    .alpha-chip {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      padding: 3px 7px;
+      border-radius: 4px;
+      background: var(--surface3);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    .alpha-chip.supported {
+      color: var(--accent);
+      border-color: var(--border-accent);
+    }
+
+    /* Mobile */
+    @media (max-width: 700px) {
+      main { grid-template-columns: 1fr; grid-template-rows: 55vh 1fr; }
+      .sidebar { border-left: none; border-top: 1px solid var(--border); }
+      body { overflow: auto; }
+      #bigLetter { font-size: 6rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loadingScreen">
+  <div class="loading-logo">Sign<em>Bridge</em></div>
+  <div class="loading-sub">ASL Real-Time Translator · Powered by MediaPipe</div>
+  <div class="loader-bar-wrap">
+    <div id="loaderBar"></div>
+  </div>
+  <div id="loadingMsg">Initializing...</div>
+</div>
+
+<!-- Header -->
+<header>
+  <div class="logo">Sign<em>Bridge</em></div>
+  <div class="header-right">
+    <div class="mode-badge">ASL Alphabet</div>
+    <div class="status-pill">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">Loading</span>
+    </div>
+  </div>
+</header>
+
+<!-- Main -->
+<main>
+  <!-- Camera -->
+  <div class="camera-wrap">
+    <video id="video" autoplay muted playsinline></video>
+    <canvas id="canvas"></canvas>
+
+    <div class="scanline"></div>
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+
+    <div class="gesture-box">
+      <span id="bigLetter">—</span>
+      <div class="ring-wrap">
+        <svg id="confirmRing" viewBox="0 0 42 42">
+          <circle cx="21" cy="21" r="20" stroke="rgba(255,255,255,0.08)" stroke-width="3" fill="none"/>
+          <circle id="confirmArc" cx="21" cy="21" r="20"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <!-- Current word -->
+    <div class="word-panel">
+      <div class="panel-tag">Current Word</div>
+      <div id="wordDisplay"><span class="cursor-blink"></span></div>
+    </div>
+
+    <!-- Sentence -->
+    <div class="sentence-panel">
+      <div class="panel-tag">Sentence</div>
+      <div id="sentenceDisplay">
+        <span class="placeholder-text">Show your hand to start signing...</span>
+      </div>
+      <div class="tips">
+        SPACE ← hold open palm<br>
+        BACKSPACE ← press Delete btn<br>
+        Hold gesture ~0.6s to confirm
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="btn btn-speak" onclick="speakSentence()">
+        🔊 &nbsp;Speak Sentence
+      </button>
+      <div class="btn-row">
+        <button class="btn" onclick="addSpace()">Add Space</button>
+        <button class="btn" onclick="deleteLetter()">⌫ Delete</button>
+      </div>
+      <button class="btn" onclick="clearAll()">Clear All</button>
+    </div>
+
+    <!-- Alpha reference -->
+    <div class="alpha-ref">
+      <div class="panel-tag">Supported Letters</div>
+      <div class="alpha-grid" id="alphaGrid"></div>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+import { HandLandmarker, FilesetResolver, DrawingUtils }
+  from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
+
+// ── State ──────────────────────────────────────────────────
+let handLandmarker = null;
+let lastVideoTime = -1;
+let currentWord = '';
+let sentence = [];
+let lastSeen = '';
+let holdFrames = 0;
+let lastAdded = '';
+let lastAddedAt = 0;
+const HOLD_FRAMES = 18; // ~0.6s at 30fps
+
+// ── DOM refs ───────────────────────────────────────────────
+const video     = document.getElementById('video');
+const canvas    = document.getElementById('canvas');
+const ctx       = canvas.getContext('2d');
+const bigLetter = document.getElementById('bigLetter');
+const wordEl    = document.getElementById('wordDisplay');
+const sentEl    = document.getElementById('sentenceDisplay');
+const arc       = document.getElementById('confirmArc');
+const statusDot = document.getElementById('statusDot');
+const statusTxt = document.getElementById('statusText');
+const loadScr   = document.getElementById('loadingScreen');
+const loadBar   = document.getElementById('loaderBar');
+const loadMsg   = document.getElementById('loadingMsg');
+
+const SUPPORTED = ['A','B','C','D','E','F','G','H','I','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y'];
+
+// Build alpha grid
+const grid = document.getElementById('alphaGrid');
+'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(l => {
+  const chip = document.createElement('div');
+  chip.className = 'alpha-chip' + (SUPPORTED.includes(l) ? ' supported' : '');
+  chip.textContent = l;
+  grid.appendChild(chip);
+});
+
+// ── Init ───────────────────────────────────────────────────
+async function init() {
+  try {
+    setLoader(10, 'Loading WASM runtime...');
+    const vision = await FilesetResolver.forVisionTasks(
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+    );
+
+    setLoader(40, 'Downloading hand model (~8MB)...');
+    handLandmarker = await HandLandmarker.createFromOptions(vision, {
+      baseOptions: {
+        modelAssetPath:
+          "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+        delegate: "GPU"
+      },
+      runningMode: "VIDEO",
+      numHands: 1,
+      minHandDetectionConfidence: 0.55,
+      minHandPresenceConfidence: 0.55,
+      minTrackingConfidence: 0.5
+    });
+
+    setLoader(80, 'Starting camera...');
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }
+    });
+    video.srcObject = stream;
+
+    video.onloadedmetadata = () => {
+      setLoader(100, 'Ready!');
+      setTimeout(() => {
+        loadScr.classList.add('hide');
+        setTimeout(() => loadScr.remove(), 600);
+      }, 400);
+      statusDot.classList.add('live');
+      statusTxt.textContent = 'Camera live';
+      requestAnimationFrame(loop);
+    };
+  } catch (err) {
+    loadMsg.textContent = `Error: ${err.message}`;
+    loadMsg.style.color = '#f87171';
+  }
+}
+
+function setLoader(pct, msg) {
+  loadBar.style.width = pct + '%';
+  loadMsg.textContent = msg;
+}
+
+// ── Geometry helpers ───────────────────────────────────────
+const lm = (pts, i) => pts[i];
+
+function tipAbovePip(pts, tip, pip) {
+  return pts[tip].y < pts[pip].y;
+}
+
+function dist2(a, b) {
+  const dx = a.x - b.x, dy = a.y - b.y;
+  return Math.sqrt(dx*dx + dy*dy);
+}
+
+function isThumbOut(pts, hand) {
+  // Thumb extended sideways
+  const tip = pts[4], ip = pts[3], mcp = pts[2];
+  return hand === 'Right'
+    ? tip.x < ip.x      // mirrored camera
+    : tip.x > ip.x;
+}
+
+function fingerStates(pts) {
+  return {
+    thumb:  isThumbOut(pts, 'Right'),
+    index:  tipAbovePip(pts, 8, 6),
+    middle: tipAbovePip(pts, 12, 10),
+    ring:   tipAbovePip(pts, 16, 14),
+    pinky:  tipAbovePip(pts, 20, 18),
+  };
+}
+
+// ── ASL Classifier ─────────────────────────────────────────
+function classify(pts) {
+  const f = fingerStates(pts);
+  const tiDist  = dist2(pts[4], pts[8]);   // thumb–index
+  const tmDist  = dist2(pts[4], pts[12]);  // thumb–middle
+  const imDist  = dist2(pts[8], pts[12]);  // index–middle
+  const tpDist  = dist2(pts[4], pts[20]);  // thumb–pinky
+
+  const ext = [f.index, f.middle, f.ring, f.pinky].filter(Boolean).length;
+
+  // ─ 4 fingers up ─
+  if (!f.thumb && f.index && f.middle && f.ring && f.pinky)  return 'B';
+
+  // ─ Thumb + pinky only ─
+  if (f.thumb && !f.index && !f.middle && !f.ring && f.pinky) return 'Y';
+
+  // ─ Only pinky ─
+  if (!f.thumb && !f.index && !f.middle && !f.ring && f.pinky) return 'I';
+
+  // ─ Index + middle ─
+  if (!f.thumb && f.index && f.middle && !f.ring && !f.pinky) {
+    if (imDist > 0.055) return 'V';
+    return 'U';
+  }
+
+  // ─ Index + middle + ring ─
+  if (!f.thumb && f.index && f.middle && f.ring && !f.pinky) return 'W';
+
+  // ─ Thumb + index only ─
+  if (f.thumb && f.index && !f.middle && !f.ring && !f.pinky) {
+    // G vs L: G points sideways, L points up
+    const indexHoriz = Math.abs(pts[8].x - pts[5].x) > Math.abs(pts[8].y - pts[5].y);
+    if (indexHoriz) return 'G';
+    return 'L';
+  }
+
+  // ─ Thumb + index + middle ─
+  if (f.thumb && f.index && f.middle && !f.ring && !f.pinky) return 'K';
+
+  // ─ Only index up ─
+  if (!f.thumb && f.index && !f.middle && !f.ring && !f.pinky) {
+    if (tiDist < 0.06 && tmDist < 0.09) return 'D';
+    return 'G'; // horizontal index
+  }
+
+  // ─ F: thumb–index touching, others up ─
+  if (tiDist < 0.055 && f.middle && f.ring && f.pinky) return 'F';
+
+  // ─ All bent (closed) ─
+  if (ext === 0) {
+    if (f.thumb) return 'A';
+    if (tiDist < 0.065) return 'O';
+    return 'S';
+  }
+
+  // ─ C: curved open hand ─
+  if (ext === 0 && tiDist > 0.09 && tiDist < 0.18) return 'C';
+
+  // ─ E: fingers curled, tips near palm ─
+  if (!f.thumb && ext === 0) {
+    if (pts[8].y > pts[5].y && pts[12].y > pts[9].y) return 'E';
+  }
+
+  // ─ M / N: fingers over thumb ─
+  if (!f.thumb && !f.index && !f.middle && !f.ring && !f.pinky) {
+    const t = pts[4];
+    const close = dist2(t, pts[8]) < 0.07;
+    if (close) return ext <= 1 ? 'N' : 'M';
+  }
+
+  // ─ T: thumb between index and middle ─
+  if (!f.index && !f.middle && !f.ring && !f.pinky) return 'T';
+
+  // ─ X: hooked index ─
+  if (!f.thumb && !f.middle && !f.ring && !f.pinky) {
+    const hookY = pts[8].y > pts[6].y && pts[8].y < pts[5].y;
+    if (hookY) return 'X';
+  }
+
+  // ─ R: crossed fingers ─
+  if (!f.thumb && f.index && f.middle && !f.ring && !f.pinky && imDist < 0.04) return 'R';
+
+  // ─ P / Q: like K/G pointing down ─
+  if (f.thumb && f.index && !f.middle && !f.ring && !f.pinky) {
+    if (pts[8].y > pts[5].y) return 'P';
+  }
+
+  return null;
+}
+
+// ── Drawing ────────────────────────────────────────────────
+function drawHand(pts) {
+  const W = canvas.width, H = canvas.height;
+  const CONNECTIONS = HandLandmarker.HAND_CONNECTIONS;
+
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(0, 212, 255, 0.55)';
+  for (const c of CONNECTIONS) {
+    ctx.beginPath();
+    ctx.moveTo(pts[c.start].x * W, pts[c.start].y * H);
+    ctx.lineTo(pts[c.end].x   * W, pts[c.end].y   * H);
+    ctx.stroke();
+  }
+
+  for (const p of pts) {
+    ctx.beginPath();
+    ctx.arc(p.x * W, p.y * H, 4.5, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0, 212, 255, 0.9)';
+    ctx.fill();
+  }
+}
+
+// ── Main loop ──────────────────────────────────────────────
+function loop() {
+  if (video.currentTime !== lastVideoTime) {
+    lastVideoTime = video.currentTime;
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const res = handLandmarker.detectForVideo(video, performance.now());
+
+    if (res.landmarks?.length) {
+      const pts = res.landmarks[0];
+      drawHand(pts);
+
+      const letter = classify(pts);
+
+      if (letter) {
+        bigLetter.textContent = letter;
+
+        if (letter === lastSeen) {
+          holdFrames = Math.min(holdFrames + 1, HOLD_FRAMES);
+        } else {
+          lastSeen   = letter;
+          holdFrames = 0;
+          bigLetter.classList.remove('confirmed');
+        }
+
+        // Progress ring
+        const prog = holdFrames / HOLD_FRAMES;
+        arc.style.strokeDashoffset = 126 - 126 * prog;
+
+        // Confirm!
+        if (holdFrames >= HOLD_FRAMES) {
+          const now = Date.now();
+          const sameLetterCooldown = letter === lastAdded && (now - lastAddedAt) < 1400;
+          if (!sameLetterCooldown) {
+            currentWord += letter;
+            lastAdded   = letter;
+            lastAddedAt = now;
+            holdFrames  = 0;
+            bigLetter.classList.add('confirmed');
+            renderWord();
+            setTimeout(() => bigLetter.classList.remove('confirmed'), 300);
+          }
+        }
+
+      } else {
+        resetLetter();
+      }
+    } else {
+      resetLetter();
+    }
+  }
+  requestAnimationFrame(loop);
+}
+
+function resetLetter() {
+  bigLetter.textContent = '—';
+  arc.style.strokeDashoffset = 126;
+  lastSeen   = '';
+  holdFrames = 0;
+}
+
+// ── UI helpers ─────────────────────────────────────────────
+function renderWord() {
+  wordEl.innerHTML = [...currentWord].map(l =>
+    `<span class="letter-chip">${l}</span>`
+  ).join('') + '<span class="cursor-blink"></span>';
+}
+
+function renderSentence() {
+  if (!sentence.length && !currentWord) {
+    sentEl.innerHTML = '<span class="placeholder-text">Show your hand to start signing...</span>';
+    return;
+  }
+  const all = [...sentence];
+  sentEl.innerHTML = all.map(w =>
+    `<span class="word-token">${w}</span>`
+  ).join(' ');
+}
+
+// ── Buttons ────────────────────────────────────────────────
+window.addSpace = () => {
+  if (currentWord.trim()) {
+    sentence.push(currentWord);
+    currentWord = '';
+    renderWord();
+    renderSentence();
+  }
+};
+
+window.deleteLetter = () => {
+  if (currentWord.length) {
+    currentWord = currentWord.slice(0, -1);
+    renderWord();
+  } else if (sentence.length) {
+    currentWord = sentence.pop();
+    renderWord();
+    renderSentence();
+  }
+};
+
+window.clearAll = () => {
+  currentWord = '';
+  sentence    = [];
+  renderWord();
+  renderSentence();
+};
+
+window.speakSentence = () => {
+  const words = [...sentence];
+  if (currentWord.trim()) words.push(currentWord);
+  const text = words.join(' ').trim();
+  if (!text) return;
+  const utt  = new SpeechSynthesisUtterance(text);
+  utt.lang  = 'en-US';
+  utt.rate  = 0.92;
+  utt.pitch = 1.05;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(utt);
+};
+
+init();
+</script>
+</body>
+</html>
