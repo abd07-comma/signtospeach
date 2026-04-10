@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
- 
+
     :root {
       --bg: #080b12;
       --surface: #0e1320;
@@ -17,7 +17,9 @@
       --accent: #00d4ff;
       --accent-dim: rgba(0, 212, 255, 0.15);
       --green: #00e5a0;
+      --green-dim: rgba(0,229,160,0.15);
       --purple: #8b5cf6;
+      --purple-dim: rgba(139,92,246,0.15);
       --text: #dce8f5;
       --muted: #5a7080;
       --border: rgba(255,255,255,0.07);
@@ -34,438 +36,251 @@
       flex-direction: column;
     }
 
-    /* ── Loading Screen ───────────────────────────────────── */
+    /* ── Loading ─────────────────────────────────────────── */
     #loadingScreen {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background: var(--bg);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 1.2rem;
-      z-index: 999;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 1.2rem; z-index: 999;
       transition: opacity 0.5s;
     }
-
     #loadingScreen.hide { opacity: 0; pointer-events: none; }
-
-    .loading-logo {
-      font-size: 2.8rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-    }
+    .loading-logo { font-size: 2.8rem; font-weight: 800; letter-spacing: -0.03em; }
     .loading-logo span { color: var(--accent); }
+    .loading-sub { font-size: 0.85rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.08em; }
+    .loader-bar-wrap { width: 280px; height: 2px; background: var(--surface3); border-radius: 2px; overflow: hidden; margin-top: 0.5rem; }
+    #loaderBar { height: 100%; background: var(--accent); border-radius: 2px; width: 0%; transition: width 0.4s ease; }
+    #loadingMsg { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--muted); }
 
-    .loading-sub {
-      font-size: 0.85rem;
-      color: var(--muted);
-      font-family: 'JetBrains Mono', monospace;
-      letter-spacing: 0.08em;
-    }
-
-    .loader-bar-wrap {
-      width: 280px;
-      height: 2px;
-      background: var(--surface3);
-      border-radius: 2px;
-      overflow: hidden;
-      margin-top: 0.5rem;
-    }
-
-    #loaderBar {
-      height: 100%;
-      background: var(--accent);
-      border-radius: 2px;
-      width: 0%;
-      transition: width 0.4s ease;
-    }
-
-    #loadingMsg {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.78rem;
-      color: var(--muted);
-    }
-
-    /* ── Header ───────────────────────────────────────────── */
+    /* ── Header ─────────────────────────────────────────── */
     header {
       flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      display: flex; align-items: center; justify-content: space-between;
       padding: 0.9rem 1.8rem;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
     }
-
-    .logo {
-      font-size: 1.3rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-    }
+    .logo { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; }
     .logo em { color: var(--accent); font-style: normal; }
 
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
+    .header-right { display: flex; align-items: center; gap: 0.8rem; }
 
     .status-pill {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      padding: 5px 12px;
-      border-radius: 100px;
+      display: flex; align-items: center; gap: 7px;
+      padding: 5px 12px; border-radius: 100px;
+      background: var(--surface2); border: 1px solid var(--border);
+      font-size: 0.75rem; font-family: 'JetBrains Mono', monospace; color: var(--muted);
+    }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); transition: background 0.3s; }
+    .status-dot.live { background: var(--green); animation: pulse-dot 1.8s infinite; }
+    @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+    /* Mode switcher */
+    .mode-switcher {
+      display: flex; gap: 4px;
       background: var(--surface2);
       border: 1px solid var(--border);
-      font-size: 0.75rem;
-      font-family: 'JetBrains Mono', monospace;
-      color: var(--muted);
+      border-radius: 8px; padding: 4px;
     }
-
-    .status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--muted);
-      transition: background 0.3s;
+    .mode-btn {
+      padding: 5px 14px; border-radius: 5px;
+      border: none; background: transparent;
+      color: var(--muted); font-family: 'Syne', sans-serif;
+      font-size: 0.8rem; font-weight: 700;
+      cursor: pointer; transition: all 0.2s;
+      letter-spacing: 0.03em;
     }
-    .status-dot.live { background: var(--green); animation: pulse-dot 1.8s infinite; }
-
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.35; }
-    }
-
-    .mode-badge {
-      font-size: 0.72rem;
-      font-family: 'JetBrains Mono', monospace;
-      padding: 4px 10px;
-      border-radius: 4px;
+    .mode-btn.active-letters {
       background: var(--accent-dim);
       color: var(--accent);
       border: 1px solid var(--border-accent);
     }
+    .mode-btn.active-words {
+      background: var(--green-dim);
+      color: var(--green);
+      border: 1px solid rgba(0,229,160,0.3);
+    }
 
-    /* ── Layout ───────────────────────────────────────────── */
+    /* ── Layout ─────────────────────────────────────────── */
     main {
-      flex: 1;
-      display: grid;
+      flex: 1; display: grid;
       grid-template-columns: 1fr 370px;
       overflow: hidden;
     }
 
-    /* ── Camera Panel ─────────────────────────────────────── */
-    .camera-wrap {
-      position: relative;
-      background: #000;
-      overflow: hidden;
-    }
+    /* ── Camera ─────────────────────────────────────────── */
+    .camera-wrap { position: relative; background: #000; overflow: hidden; }
+    #video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+    #canvas { position: absolute; inset: 0; width: 100%; height: 100%; transform: scaleX(-1); }
 
-    #video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transform: scaleX(-1);
-    }
-
-    #canvas {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      transform: scaleX(-1);
-    }
-
-    /* Scan line animation */
     .scanline {
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 2px;
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
       background: linear-gradient(90deg, transparent, var(--accent), transparent);
-      animation: scan 3s linear infinite;
-      opacity: 0.4;
+      animation: scan 3s linear infinite; opacity: 0.35;
     }
+    @keyframes scan { 0%{top:0%} 100%{top:100%} }
 
-    @keyframes scan {
-      0% { top: 0%; }
-      100% { top: 100%; }
-    }
+    .corner { position: absolute; width: 28px; height: 28px; border-color: var(--accent); border-style: solid; opacity: 0.5; }
+    .corner.tl { top:16px; left:16px; border-width: 2px 0 0 2px; }
+    .corner.tr { top:16px; right:16px; border-width: 2px 2px 0 0; }
+    .corner.bl { bottom:16px; left:16px; border-width: 0 0 2px 2px; }
+    .corner.br { bottom:16px; right:16px; border-width: 0 2px 2px 0; }
 
-    /* Corner brackets */
-    .corner {
-      position: absolute;
-      width: 28px;
-      height: 28px;
-      border-color: var(--accent);
-      border-style: solid;
-      opacity: 0.5;
-    }
-    .corner.tl { top: 16px; left: 16px; border-width: 2px 0 0 2px; }
-    .corner.tr { top: 16px; right: 16px; border-width: 2px 2px 0 0; }
-    .corner.bl { bottom: 16px; left: 16px; border-width: 0 0 2px 2px; }
-    .corner.br { bottom: 16px; right: 16px; border-width: 0 2px 2px 0; }
-
-    /* Big letter overlay */
+    /* Gesture display */
     .gesture-box {
-      position: absolute;
-      bottom: 1.5rem;
-      left: 50%;
-      transform: translateX(-50%);
-      text-align: center;
+      position: absolute; bottom: 1.5rem; left: 50%;
+      transform: translateX(-50%); text-align: center;
+      width: 90%;
     }
 
     #bigLetter {
-      font-size: 9rem;
-      font-weight: 800;
-      color: var(--accent);
-      line-height: 1;
-      letter-spacing: -0.05em;
-      text-shadow:
-        0 0 20px rgba(0, 212, 255, 0.6),
-        0 0 60px rgba(0, 212, 255, 0.2);
-      min-width: 120px;
-      display: block;
-      transition: transform 0.1s, color 0.15s;
+      font-size: 9rem; font-weight: 800; color: var(--accent);
+      line-height: 1; letter-spacing: -0.05em;
+      text-shadow: 0 0 20px rgba(0,212,255,0.6), 0 0 60px rgba(0,212,255,0.2);
+      min-width: 120px; display: block;
+      transition: transform 0.1s, color 0.15s, font-size 0.2s;
     }
+    #bigLetter.word-mode { font-size: 3.2rem; letter-spacing: 0; }
+    #bigLetter.confirmed { color: var(--green); text-shadow: 0 0 30px rgba(0,229,160,0.7); }
 
-    #bigLetter.confirmed {
-      color: var(--green);
-      text-shadow: 0 0 30px rgba(0, 229, 160, 0.7);
-    }
-
-    /* Confirm progress ring */
-    .ring-wrap {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-top: 0.3rem;
-    }
-
-    #confirmRing {
-      width: 48px;
-      height: 48px;
-      transform: rotate(-90deg);
-    }
-
+    .ring-wrap { display: flex; align-items: center; justify-content: center; margin-top: 0.3rem; }
+    #confirmRing { width: 48px; height: 48px; transform: rotate(-90deg); }
     #confirmArc {
-      stroke: var(--accent);
-      stroke-width: 3;
-      fill: none;
-      stroke-linecap: round;
-      stroke-dasharray: 126;
-      stroke-dashoffset: 126;
+      stroke: var(--accent); stroke-width: 3; fill: none;
+      stroke-linecap: round; stroke-dasharray: 126; stroke-dashoffset: 126;
       transition: stroke-dashoffset 0.08s linear;
     }
 
-    /* ── Sidebar ──────────────────────────────────────────── */
-    .sidebar {
-      background: var(--surface);
-      border-left: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    /* Word panel */
-    .word-panel {
-      padding: 1.3rem 1.5rem;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .panel-tag {
-      font-size: 0.68rem;
+    /* Word mode tag */
+    #gestureTag {
+      display: none;
       font-family: 'JetBrains Mono', monospace;
-      color: var(--muted);
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      margin-bottom: 0.6rem;
+      font-size: 0.72rem; color: var(--green);
+      letter-spacing: 0.1em; text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    /* ── Sidebar ─────────────────────────────────────────── */
+    .sidebar {
+      background: var(--surface); border-left: 1px solid var(--border);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+
+    .word-panel { padding: 1.3rem 1.5rem; border-bottom: 1px solid var(--border); }
+    .panel-tag {
+      font-size: 0.68rem; font-family: 'JetBrains Mono', monospace;
+      color: var(--muted); letter-spacing: 0.12em;
+      text-transform: uppercase; margin-bottom: 0.6rem;
     }
 
     #wordDisplay {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 2rem;
-      font-weight: 500;
-      letter-spacing: 0.18em;
-      color: var(--text);
-      min-height: 2.5rem;
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 2px;
+      font-family: 'JetBrains Mono', monospace; font-size: 1.6rem;
+      font-weight: 500; letter-spacing: 0.1em; color: var(--text);
+      min-height: 2.5rem; display: flex; align-items: center; flex-wrap: wrap; gap: 4px;
     }
 
-    .letter-chip {
+    .letter-chip { display: inline-block; animation: popIn 0.15s cubic-bezier(0.34,1.56,0.64,1); }
+    .word-chip {
       display: inline-block;
-      animation: popIn 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+      background: var(--green-dim); color: var(--green);
+      border: 1px solid rgba(0,229,160,0.3);
+      border-radius: 6px; padding: 3px 10px;
+      font-size: 1rem; letter-spacing: 0.05em;
+      animation: popIn 0.2s cubic-bezier(0.34,1.56,0.64,1);
     }
-
-    @keyframes popIn {
-      0% { transform: scale(0.5); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
-    }
+    @keyframes popIn { 0%{transform:scale(0.5);opacity:0} 100%{transform:scale(1);opacity:1} }
 
     .cursor-blink {
-      display: inline-block;
-      width: 2px;
-      height: 1.8rem;
-      background: var(--accent);
-      margin-left: 3px;
-      vertical-align: middle;
-      animation: blink 1s step-end infinite;
+      display: inline-block; width: 2px; height: 1.8rem;
+      background: var(--accent); margin-left: 3px;
+      vertical-align: middle; animation: blink 1s step-end infinite;
     }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0; }
-    }
-
-    /* Sentence panel */
+    /* Sentence */
     .sentence-panel {
-      flex: 1;
-      padding: 1.3rem 1.5rem;
+      flex: 1; padding: 1.3rem 1.5rem;
       border-bottom: 1px solid var(--border);
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
+      overflow-y: auto; display: flex; flex-direction: column;
     }
-
-    #sentenceDisplay {
-      font-size: 0.95rem;
-      line-height: 1.7;
-      color: var(--text);
-      flex: 1;
-    }
-
+    #sentenceDisplay { font-size: 0.95rem; line-height: 1.7; color: var(--text); flex: 1; }
     .word-token {
-      display: inline-block;
-      margin: 2px 4px 2px 0;
-      padding: 2px 8px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.9rem;
+      display: inline-block; margin: 2px 4px 2px 0;
+      padding: 2px 8px; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.9rem;
     }
-
-    .placeholder-text {
-      color: var(--muted);
-      font-size: 0.9rem;
-      font-style: italic;
+    .word-token.is-word {
+      background: var(--green-dim); color: var(--green);
+      border-color: rgba(0,229,160,0.3);
     }
-
-    /* How to use */
+    .placeholder-text { color: var(--muted); font-size: 0.9rem; font-style: italic; }
     .tips {
-      font-size: 0.78rem;
-      color: var(--muted);
+      font-size: 0.78rem; color: var(--muted);
       font-family: 'JetBrains Mono', monospace;
-      margin-top: 1rem;
-      line-height: 1.8;
-      border-top: 1px solid var(--border);
-      padding-top: 0.8rem;
+      margin-top: 1rem; line-height: 1.8;
+      border-top: 1px solid var(--border); padding-top: 0.8rem;
     }
 
     /* Controls */
-    .controls {
-      padding: 1.2rem 1.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.6rem;
-    }
-
+    .controls { padding: 1.2rem 1.5rem; display: flex; flex-direction: column; gap: 0.6rem; }
     .btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 0.68rem 1rem;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--surface2);
-      color: var(--text);
-      font-family: 'Syne', sans-serif;
-      font-size: 0.88rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: border-color 0.15s, background 0.15s;
-      letter-spacing: 0.01em;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 0.68rem 1rem; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--surface2);
+      color: var(--text); font-family: 'Syne', sans-serif;
+      font-size: 0.88rem; font-weight: 600; cursor: pointer;
+      transition: border-color 0.15s, background 0.15s; letter-spacing: 0.01em;
     }
-
-    .btn:hover {
-      border-color: var(--border-accent);
-      background: var(--surface3);
-    }
-
-    .btn-speak {
-      background: var(--accent);
-      color: #05111a;
-      border-color: var(--accent);
-      font-size: 0.92rem;
-    }
+    .btn:hover { border-color: var(--border-accent); background: var(--surface3); }
+    .btn-speak { background: var(--accent); color: #05111a; border-color: var(--accent); font-size: 0.92rem; }
     .btn-speak:hover { opacity: 0.88; background: var(--accent); }
+    .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
 
-    .btn-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.6rem;
+    /* Word reference grid */
+    .words-ref { padding: 0.8rem 1.5rem; border-top: 1px solid var(--border); }
+    .words-grid { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 0.5rem; }
+    .words-chip {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+      padding: 3px 8px; border-radius: 4px;
+      background: var(--green-dim); color: var(--green);
+      border: 1px solid rgba(0,229,160,0.25);
     }
-
-    /* Alphabet ref */
-    .alpha-ref {
-      padding: 0.8rem 1.5rem;
-      border-top: 1px solid var(--border);
-      background: var(--surface);
-    }
-
-    .alpha-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      margin-top: 0.5rem;
-    }
-
+    .alpha-ref { padding: 0.8rem 1.5rem; border-top: 1px solid var(--border); }
+    .alpha-grid { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 0.5rem; }
     .alpha-chip {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.72rem;
-      padding: 3px 7px;
-      border-radius: 4px;
-      background: var(--surface3);
-      color: var(--muted);
-      border: 1px solid var(--border);
+      font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+      padding: 3px 7px; border-radius: 4px;
+      background: var(--surface3); color: var(--muted); border: 1px solid var(--border);
     }
+    .alpha-chip.supported { color: var(--accent); border-color: var(--border-accent); }
 
-    .alpha-chip.supported {
-      color: var(--accent);
-      border-color: var(--border-accent);
-    }
-
-    /* Mobile */
     @media (max-width: 700px) {
       main { grid-template-columns: 1fr; grid-template-rows: 55vh 1fr; }
       .sidebar { border-left: none; border-top: 1px solid var(--border); }
       body { overflow: auto; }
-      #bigLetter { font-size: 6rem; }
+      #bigLetter { font-size: 5rem; }
+      #bigLetter.word-mode { font-size: 2.2rem; }
     }
   </style>
 </head>
 <body>
 
-<!-- Loading -->
 <div id="loadingScreen">
-  <div class="loading-logo">Sign<em>Bridge</em></div>
+  <div class="loading-logo">Sign<span>Bridge</span></div>
   <div class="loading-sub">ASL Real-Time Translator · Powered by MediaPipe</div>
-  <div class="loader-bar-wrap">
-    <div id="loaderBar"></div>
-  </div>
+  <div class="loader-bar-wrap"><div id="loaderBar"></div></div>
   <div id="loadingMsg">Initializing...</div>
 </div>
 
-<!-- Header -->
 <header>
   <div class="logo">Sign<em>Bridge</em></div>
   <div class="header-right">
-    <div class="mode-badge">ASL Alphabet</div>
+    <div class="mode-switcher">
+      <button class="mode-btn active-letters" id="btnLetters" onclick="setMode('letters')">A–Z Letters</button>
+      <button class="mode-btn" id="btnWords" onclick="setMode('words')">Words</button>
+    </div>
     <div class="status-pill">
       <div class="status-dot" id="statusDot"></div>
       <span id="statusText">Loading</span>
@@ -473,20 +288,15 @@
   </div>
 </header>
 
-<!-- Main -->
 <main>
-  <!-- Camera -->
   <div class="camera-wrap">
     <video id="video" autoplay muted playsinline></video>
     <canvas id="canvas"></canvas>
-
     <div class="scanline"></div>
-    <div class="corner tl"></div>
-    <div class="corner tr"></div>
-    <div class="corner bl"></div>
-    <div class="corner br"></div>
-
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
     <div class="gesture-box">
+      <div id="gestureTag">Detected word</div>
       <span id="bigLetter">—</span>
       <div class="ring-wrap">
         <svg id="confirmRing" viewBox="0 0 42 42">
@@ -497,86 +307,146 @@
     </div>
   </div>
 
-  <!-- Sidebar -->
   <div class="sidebar">
-    <!-- Current word -->
     <div class="word-panel">
-      <div class="panel-tag">Current Word</div>
+      <div class="panel-tag" id="wordPanelLabel">Current Word</div>
       <div id="wordDisplay"><span class="cursor-blink"></span></div>
     </div>
 
-    <!-- Sentence -->
     <div class="sentence-panel">
       <div class="panel-tag">Sentence</div>
       <div id="sentenceDisplay">
         <span class="placeholder-text">Show your hand to start signing...</span>
       </div>
-      <div class="tips">
-        SPACE ← hold open palm<br>
-        BACKSPACE ← press Delete btn<br>
+      <div class="tips" id="tipsEl">
+        SPACE ← hold open palm (B gesture)<br>
+        BACKSPACE ← Delete button<br>
         Hold gesture ~0.6s to confirm
       </div>
     </div>
 
-    <!-- Controls -->
     <div class="controls">
-      <button class="btn btn-speak" onclick="speakSentence()">
-        🔊 &nbsp;Speak Sentence
-      </button>
+      <button class="btn btn-speak" onclick="speakSentence()">🔊 &nbsp;Speak Sentence</button>
       <div class="btn-row">
-        <button class="btn" onclick="addSpace()">Add Space</button>
+        <button class="btn" id="spaceBtn" onclick="addSpace()">Add Space</button>
         <button class="btn" onclick="deleteLetter()">⌫ Delete</button>
       </div>
       <button class="btn" onclick="clearAll()">Clear All</button>
     </div>
 
-    <!-- Alpha reference -->
-    <div class="alpha-ref">
+    <!-- Letters ref -->
+    <div class="alpha-ref" id="alphaRef">
       <div class="panel-tag">Supported Letters</div>
       <div class="alpha-grid" id="alphaGrid"></div>
+    </div>
+
+    <!-- Words ref -->
+    <div class="words-ref" id="wordsRef" style="display:none">
+      <div class="panel-tag">Supported Words</div>
+      <div class="words-grid" id="wordsGrid"></div>
     </div>
   </div>
 </main>
 
 <script type="module">
-import { HandLandmarker, FilesetResolver, DrawingUtils }
+import { HandLandmarker, FilesetResolver }
   from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
 
 // ── State ──────────────────────────────────────────────────
 let handLandmarker = null;
-let lastVideoTime = -1;
-let currentWord = '';
-let sentence = [];
-let lastSeen = '';
-let holdFrames = 0;
-let lastAdded = '';
-let lastAddedAt = 0;
-const HOLD_FRAMES = 18; // ~0.6s at 30fps
+let lastVideoTime  = -1;
+let currentWord    = '';
+let sentence       = [];   // [{text, isWord}]
+let lastSeen       = '';
+let holdFrames     = 0;
+let lastAdded      = '';
+let lastAddedAt    = 0;
+let mode           = 'letters'; // 'letters' | 'words'
+const HOLD_FRAMES  = 18;
 
-// ── DOM refs ───────────────────────────────────────────────
-const video     = document.getElementById('video');
-const canvas    = document.getElementById('canvas');
-const ctx       = canvas.getContext('2d');
-const bigLetter = document.getElementById('bigLetter');
-const wordEl    = document.getElementById('wordDisplay');
-const sentEl    = document.getElementById('sentenceDisplay');
-const arc       = document.getElementById('confirmArc');
-const statusDot = document.getElementById('statusDot');
-const statusTxt = document.getElementById('statusText');
-const loadScr   = document.getElementById('loadingScreen');
-const loadBar   = document.getElementById('loaderBar');
-const loadMsg   = document.getElementById('loadingMsg');
+// Motion tracking (for words that require movement)
+const landmarkHistory = [];
+const HIST_LEN = 12;
 
-const SUPPORTED = ['A','B','C','D','E','F','G','H','I','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y'];
+// ── DOM ────────────────────────────────────────────────────
+const video      = document.getElementById('video');
+const canvas     = document.getElementById('canvas');
+const ctx        = canvas.getContext('2d');
+const bigLetter  = document.getElementById('bigLetter');
+const wordEl     = document.getElementById('wordDisplay');
+const sentEl     = document.getElementById('sentenceDisplay');
+const arc        = document.getElementById('confirmArc');
+const statusDot  = document.getElementById('statusDot');
+const statusTxt  = document.getElementById('statusText');
+const loadScr    = document.getElementById('loadingScreen');
+const loadBar    = document.getElementById('loaderBar');
+const loadMsg    = document.getElementById('loadingMsg');
+const gestureTag = document.getElementById('gestureTag');
+const tipsEl     = document.getElementById('tipsEl');
 
-// Build alpha grid
+const SUPPORTED_LETTERS = ['A','B','C','D','E','F','G','H','I','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y'];
+const SUPPORTED_WORDS = [
+  'HELLO','THANK YOU','YES','NO','PLEASE',
+  'SORRY','I LOVE YOU','GOOD','BAD',
+  'HELP','MORE','STOP','AGAIN','FRIEND'
+];
+
+// Build letter chips
 const grid = document.getElementById('alphaGrid');
 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(l => {
-  const chip = document.createElement('div');
-  chip.className = 'alpha-chip' + (SUPPORTED.includes(l) ? ' supported' : '');
-  chip.textContent = l;
-  grid.appendChild(chip);
+  const c = document.createElement('div');
+  c.className = 'alpha-chip' + (SUPPORTED_LETTERS.includes(l) ? ' supported' : '');
+  c.textContent = l;
+  grid.appendChild(c);
 });
+
+// Build word chips
+const wgrid = document.getElementById('wordsGrid');
+SUPPORTED_WORDS.forEach(w => {
+  const c = document.createElement('div');
+  c.className = 'words-chip';
+  c.textContent = w;
+  wgrid.appendChild(c);
+});
+
+// ── Mode switch ────────────────────────────────────────────
+window.setMode = (m) => {
+  mode = m;
+  const btnL = document.getElementById('btnLetters');
+  const btnW = document.getElementById('btnWords');
+  const alphaRef = document.getElementById('alphaRef');
+  const wordsRef = document.getElementById('wordsRef');
+  const wordPanelLabel = document.getElementById('wordPanelLabel');
+  const spaceBtn = document.getElementById('spaceBtn');
+
+  if (m === 'letters') {
+    btnL.className = 'mode-btn active-letters';
+    btnW.className = 'mode-btn';
+    bigLetter.classList.remove('word-mode');
+    gestureTag.style.display = 'none';
+    alphaRef.style.display = '';
+    wordsRef.style.display = 'none';
+    wordPanelLabel.textContent = 'Current Word';
+    spaceBtn.textContent = 'Add Space';
+    tipsEl.innerHTML = 'SPACE ← hold open palm (B gesture)<br>BACKSPACE ← Delete button<br>Hold gesture ~0.6s to confirm';
+    arc.style.stroke = 'var(--accent)';
+  } else {
+    btnW.className = 'mode-btn active-words';
+    btnL.className = 'mode-btn';
+    bigLetter.classList.add('word-mode');
+    gestureTag.style.display = 'block';
+    alphaRef.style.display = 'none';
+    wordsRef.style.display = '';
+    wordPanelLabel.textContent = 'Detected Words';
+    spaceBtn.style.display = 'none';
+    tipsEl.innerHTML = 'Hold each gesture ~0.8s to confirm<br>Words added to sentence instantly<br>Press Speak to hear your sentence';
+    arc.style.stroke = 'var(--green)';
+  }
+
+  resetLetter();
+  currentWord = '';
+  renderWord();
+};
 
 // ── Init ───────────────────────────────────────────────────
 async function init() {
@@ -585,12 +455,10 @@ async function init() {
     const vision = await FilesetResolver.forVisionTasks(
       "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
     );
-
-    setLoader(40, 'Downloading hand model (~8MB)...');
+    setLoader(40, 'Downloading hand model...');
     handLandmarker = await HandLandmarker.createFromOptions(vision, {
       baseOptions: {
-        modelAssetPath:
-          "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
         delegate: "GPU"
       },
       runningMode: "VIDEO",
@@ -599,24 +467,19 @@ async function init() {
       minHandPresenceConfidence: 0.55,
       minTrackingConfidence: 0.5
     });
-
     setLoader(80, 'Starting camera...');
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }
+      video: { width: {ideal:1280}, height: {ideal:720}, facingMode: 'user' }
     });
     video.srcObject = stream;
-
     video.onloadedmetadata = () => {
       setLoader(100, 'Ready!');
-      setTimeout(() => {
-        loadScr.classList.add('hide');
-        setTimeout(() => loadScr.remove(), 600);
-      }, 400);
+      setTimeout(() => { loadScr.classList.add('hide'); setTimeout(() => loadScr.remove(), 600); }, 400);
       statusDot.classList.add('live');
       statusTxt.textContent = 'Camera live';
       requestAnimationFrame(loop);
     };
-  } catch (err) {
+  } catch(err) {
     loadMsg.textContent = `Error: ${err.message}`;
     loadMsg.style.color = '#f87171';
   }
@@ -627,29 +490,18 @@ function setLoader(pct, msg) {
   loadMsg.textContent = msg;
 }
 
-// ── Geometry helpers ───────────────────────────────────────
-const lm = (pts, i) => pts[i];
-
-function tipAbovePip(pts, tip, pip) {
-  return pts[tip].y < pts[pip].y;
-}
-
+// ── Geometry ───────────────────────────────────────────────
+function tipAbovePip(pts, tip, pip) { return pts[tip].y < pts[pip].y; }
 function dist2(a, b) {
-  const dx = a.x - b.x, dy = a.y - b.y;
-  return Math.sqrt(dx*dx + dy*dy);
+  const dx=a.x-b.x, dy=a.y-b.y;
+  return Math.sqrt(dx*dx+dy*dy);
 }
-
-function isThumbOut(pts, hand) {
-  // Thumb extended sideways
-  const tip = pts[4], ip = pts[3], mcp = pts[2];
-  return hand === 'Right'
-    ? tip.x < ip.x      // mirrored camera
-    : tip.x > ip.x;
+function isThumbOut(pts) {
+  return pts[4].x < pts[3].x; // mirrored
 }
-
 function fingerStates(pts) {
   return {
-    thumb:  isThumbOut(pts, 'Right'),
+    thumb:  isThumbOut(pts),
     index:  tipAbovePip(pts, 8, 6),
     middle: tipAbovePip(pts, 12, 10),
     ring:   tipAbovePip(pts, 16, 14),
@@ -657,114 +509,141 @@ function fingerStates(pts) {
   };
 }
 
-// ── ASL Classifier ─────────────────────────────────────────
-function classify(pts) {
-  const f = fingerStates(pts);
-  const tiDist  = dist2(pts[4], pts[8]);   // thumb–index
-  const tmDist  = dist2(pts[4], pts[12]);  // thumb–middle
-  const imDist  = dist2(pts[8], pts[12]);  // index–middle
-  const tpDist  = dist2(pts[4], pts[20]);  // thumb–pinky
+// Motion helpers
+function getWristPos(pts) { return {x: pts[0].x, y: pts[0].y}; }
+function getMotion() {
+  if (landmarkHistory.length < 4) return {dx:0,dy:0,mag:0};
+  const old = landmarkHistory[0];
+  const cur = landmarkHistory[landmarkHistory.length-1];
+  const dx = cur.x - old.x;
+  const dy = cur.y - old.y;
+  return {dx, dy, mag: Math.sqrt(dx*dx+dy*dy)};
+}
 
+// ── ASL Word Classifier ────────────────────────────────────
+function classifyWord(pts) {
+  const f = fingerStates(pts);
+  const tiDist = dist2(pts[4], pts[8]);
+  const motion = getMotion();
   const ext = [f.index, f.middle, f.ring, f.pinky].filter(Boolean).length;
 
-  // ─ 4 fingers up ─
-  if (!f.thumb && f.index && f.middle && f.ring && f.pinky)  return 'B';
+  // I LOVE YOU — thumb + index + pinky up
+  if (f.thumb && f.index && !f.middle && !f.ring && f.pinky) return 'I LOVE YOU';
 
-  // ─ Thumb + pinky only ─
+  // HELLO — open palm (all 5 fingers up), slight horizontal motion
+  if (f.thumb && f.index && f.middle && f.ring && f.pinky) {
+    if (motion.mag > 0.04 && Math.abs(motion.dx) > Math.abs(motion.dy)) return 'HELLO';
+    return 'HELLO'; // static open palm also counts
+  }
+
+  // YES — fist bobbing (closed fist moving up/down)
+  if (!f.thumb && !f.index && !f.middle && !f.ring && !f.pinky) {
+    if (motion.mag > 0.03 && Math.abs(motion.dy) > Math.abs(motion.dx)) return 'YES';
+    return 'YES';
+  }
+
+  // NO — index + middle snapping (two fingers, moving side to side)
+  if (!f.thumb && f.index && f.middle && !f.ring && !f.pinky) {
+    if (motion.mag > 0.03 && Math.abs(motion.dx) > Math.abs(motion.dy)) return 'NO';
+    return 'NO';
+  }
+
+  // PLEASE — open B hand (4 fingers together), no thumb
+  if (!f.thumb && f.index && f.middle && f.ring && f.pinky) {
+    if (motion.mag > 0.025) return 'PLEASE';
+    return 'PLEASE';
+  }
+
+  // THANK YOU — flat hand from chin forward (index+middle+ring up, moving forward)
+  if (!f.thumb && f.index && f.middle && f.ring && !f.pinky) return 'THANK YOU';
+
+  // SORRY — fist (thumb out) rubbing chest
+  if (f.thumb && !f.index && !f.middle && !f.ring && !f.pinky) {
+    return 'SORRY';
+  }
+
+  // HELP — fist on palm (thumb up) lifting
+  if (f.thumb && !f.index && !f.middle && !f.ring && !f.pinky) return 'HELP';
+
+  // STOP — flat hand, chop (index+middle+ring+pinky up, no thumb)
+  if (!f.thumb && f.index && f.middle && f.ring && f.pinky && motion.mag > 0.06) return 'STOP';
+
+  // MORE — fingertips touching (pinch both hands - approximate with small hand)
+  if (tiDist < 0.05 && !f.index && !f.middle) return 'MORE';
+
+  // GOOD — thumb up only
+  if (f.thumb && !f.index && !f.middle && !f.ring && !f.pinky) return 'GOOD';
+
+  // FRIEND — index fingers hooked
+  if (!f.thumb && f.index && !f.middle && !f.ring && !f.pinky) return 'FRIEND';
+
+  // AGAIN — curved hand tapping palm
+  if (!f.thumb && f.index && f.middle && !f.ring && !f.pinky && tiDist > 0.08) return 'AGAIN';
+
+  // BAD — open hand flipping (4 fingers, then motion down)
+  if (motion.dy > 0.05 && ext >= 3) return 'BAD';
+
+  return null;
+}
+
+// ── ASL Letter Classifier ──────────────────────────────────
+function classifyLetter(pts) {
+  const f = fingerStates(pts);
+  const tiDist = dist2(pts[4], pts[8]);
+  const tmDist = dist2(pts[4], pts[12]);
+  const imDist = dist2(pts[8], pts[12]);
+  const ext = [f.index, f.middle, f.ring, f.pinky].filter(Boolean).length;
+
+  if (!f.thumb && f.index && f.middle && f.ring && f.pinky) return 'B';
   if (f.thumb && !f.index && !f.middle && !f.ring && f.pinky) return 'Y';
-
-  // ─ Only pinky ─
   if (!f.thumb && !f.index && !f.middle && !f.ring && f.pinky) return 'I';
-
-  // ─ Index + middle ─
   if (!f.thumb && f.index && f.middle && !f.ring && !f.pinky) {
     if (imDist > 0.055) return 'V';
     return 'U';
   }
-
-  // ─ Index + middle + ring ─
   if (!f.thumb && f.index && f.middle && f.ring && !f.pinky) return 'W';
-
-  // ─ Thumb + index only ─
   if (f.thumb && f.index && !f.middle && !f.ring && !f.pinky) {
-    // G vs L: G points sideways, L points up
-    const indexHoriz = Math.abs(pts[8].x - pts[5].x) > Math.abs(pts[8].y - pts[5].y);
-    if (indexHoriz) return 'G';
-    return 'L';
+    const indexHoriz = Math.abs(pts[8].x-pts[5].x) > Math.abs(pts[8].y-pts[5].y);
+    return indexHoriz ? 'G' : 'L';
   }
-
-  // ─ Thumb + index + middle ─
   if (f.thumb && f.index && f.middle && !f.ring && !f.pinky) return 'K';
-
-  // ─ Only index up ─
   if (!f.thumb && f.index && !f.middle && !f.ring && !f.pinky) {
     if (tiDist < 0.06 && tmDist < 0.09) return 'D';
-    return 'G'; // horizontal index
+    return 'G';
   }
-
-  // ─ F: thumb–index touching, others up ─
   if (tiDist < 0.055 && f.middle && f.ring && f.pinky) return 'F';
-
-  // ─ All bent (closed) ─
   if (ext === 0) {
     if (f.thumb) return 'A';
     if (tiDist < 0.065) return 'O';
     return 'S';
   }
-
-  // ─ C: curved open hand ─
-  if (ext === 0 && tiDist > 0.09 && tiDist < 0.18) return 'C';
-
-  // ─ E: fingers curled, tips near palm ─
-  if (!f.thumb && ext === 0) {
-    if (pts[8].y > pts[5].y && pts[12].y > pts[9].y) return 'E';
-  }
-
-  // ─ M / N: fingers over thumb ─
+  if (!f.thumb && f.index && f.middle && !f.ring && !f.pinky && imDist < 0.04) return 'R';
   if (!f.thumb && !f.index && !f.middle && !f.ring && !f.pinky) {
     const t = pts[4];
     const close = dist2(t, pts[8]) < 0.07;
     if (close) return ext <= 1 ? 'N' : 'M';
   }
-
-  // ─ T: thumb between index and middle ─
   if (!f.index && !f.middle && !f.ring && !f.pinky) return 'T';
-
-  // ─ X: hooked index ─
-  if (!f.thumb && !f.middle && !f.ring && !f.pinky) {
-    const hookY = pts[8].y > pts[6].y && pts[8].y < pts[5].y;
-    if (hookY) return 'X';
-  }
-
-  // ─ R: crossed fingers ─
-  if (!f.thumb && f.index && f.middle && !f.ring && !f.pinky && imDist < 0.04) return 'R';
-
-  // ─ P / Q: like K/G pointing down ─
-  if (f.thumb && f.index && !f.middle && !f.ring && !f.pinky) {
-    if (pts[8].y > pts[5].y) return 'P';
-  }
-
   return null;
 }
 
-// ── Drawing ────────────────────────────────────────────────
+// ── Draw ───────────────────────────────────────────────────
 function drawHand(pts) {
   const W = canvas.width, H = canvas.height;
   const CONNECTIONS = HandLandmarker.HAND_CONNECTIONS;
-
+  const color = mode === 'words' ? 'rgba(0,229,160,' : 'rgba(0,212,255,';
   ctx.lineWidth = 2;
-  ctx.strokeStyle = 'rgba(0, 212, 255, 0.55)';
+  ctx.strokeStyle = color + '0.55)';
   for (const c of CONNECTIONS) {
     ctx.beginPath();
-    ctx.moveTo(pts[c.start].x * W, pts[c.start].y * H);
-    ctx.lineTo(pts[c.end].x   * W, pts[c.end].y   * H);
+    ctx.moveTo(pts[c.start].x*W, pts[c.start].y*H);
+    ctx.lineTo(pts[c.end].x*W,   pts[c.end].y*H);
     ctx.stroke();
   }
-
   for (const p of pts) {
     ctx.beginPath();
-    ctx.arc(p.x * W, p.y * H, 4.5, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0, 212, 255, 0.9)';
+    ctx.arc(p.x*W, p.y*H, 4.5, 0, Math.PI*2);
+    ctx.fillStyle = color + '0.9)';
     ctx.fill();
   }
 }
@@ -783,42 +662,51 @@ function loop() {
       const pts = res.landmarks[0];
       drawHand(pts);
 
-      const letter = classify(pts);
+      // Track wrist position for motion
+      const wp = getWristPos(pts);
+      landmarkHistory.push(wp);
+      if (landmarkHistory.length > HIST_LEN) landmarkHistory.shift();
 
-      if (letter) {
-        bigLetter.textContent = letter;
+      const detected = mode === 'words' ? classifyWord(pts) : classifyLetter(pts);
 
-        if (letter === lastSeen) {
-          holdFrames = Math.min(holdFrames + 1, HOLD_FRAMES);
+      if (detected) {
+        bigLetter.textContent = detected;
+
+        if (detected === lastSeen) {
+          holdFrames = Math.min(holdFrames+1, HOLD_FRAMES);
         } else {
-          lastSeen   = letter;
+          lastSeen = detected;
           holdFrames = 0;
           bigLetter.classList.remove('confirmed');
         }
 
-        // Progress ring
         const prog = holdFrames / HOLD_FRAMES;
-        arc.style.strokeDashoffset = 126 - 126 * prog;
+        arc.style.strokeDashoffset = 126 - 126*prog;
 
-        // Confirm!
         if (holdFrames >= HOLD_FRAMES) {
           const now = Date.now();
-          const sameLetterCooldown = letter === lastAdded && (now - lastAddedAt) < 1400;
-          if (!sameLetterCooldown) {
-            currentWord += letter;
-            lastAdded   = letter;
+          const cooldown = detected === lastAdded && (now-lastAddedAt) < 1600;
+          if (!cooldown) {
+            if (mode === 'letters') {
+              currentWord += detected;
+              renderWord();
+            } else {
+              sentence.push({text: detected, isWord: true});
+              renderSentence();
+              speakWord(detected);
+            }
+            lastAdded   = detected;
             lastAddedAt = now;
             holdFrames  = 0;
             bigLetter.classList.add('confirmed');
-            renderWord();
-            setTimeout(() => bigLetter.classList.remove('confirmed'), 300);
+            setTimeout(() => bigLetter.classList.remove('confirmed'), 350);
           }
         }
-
       } else {
         resetLetter();
       }
     } else {
+      landmarkHistory.length = 0;
       resetLetter();
     }
   }
@@ -828,12 +716,12 @@ function loop() {
 function resetLetter() {
   bigLetter.textContent = '—';
   arc.style.strokeDashoffset = 126;
-  lastSeen   = '';
-  holdFrames = 0;
+  lastSeen = ''; holdFrames = 0;
 }
 
-// ── UI helpers ─────────────────────────────────────────────
+// ── Render ─────────────────────────────────────────────────
 function renderWord() {
+  if (mode === 'words') return;
   wordEl.innerHTML = [...currentWord].map(l =>
     `<span class="letter-chip">${l}</span>`
   ).join('') + '<span class="cursor-blink"></span>';
@@ -844,16 +732,19 @@ function renderSentence() {
     sentEl.innerHTML = '<span class="placeholder-text">Show your hand to start signing...</span>';
     return;
   }
-  const all = [...sentence];
-  sentEl.innerHTML = all.map(w =>
-    `<span class="word-token">${w}</span>`
+  let html = sentence.map(item =>
+    `<span class="word-token${item.isWord?' is-word':''}">${item.text}</span>`
   ).join(' ');
+  if (currentWord && mode === 'letters') {
+    html += ` <span class="word-token">${currentWord}_</span>`;
+  }
+  sentEl.innerHTML = html;
 }
 
 // ── Buttons ────────────────────────────────────────────────
 window.addSpace = () => {
   if (currentWord.trim()) {
-    sentence.push(currentWord);
+    sentence.push({text: currentWord, isWord: false});
     currentWord = '';
     renderWord();
     renderSentence();
@@ -861,35 +752,42 @@ window.addSpace = () => {
 };
 
 window.deleteLetter = () => {
-  if (currentWord.length) {
-    currentWord = currentWord.slice(0, -1);
-    renderWord();
-  } else if (sentence.length) {
-    currentWord = sentence.pop();
-    renderWord();
-    renderSentence();
+  if (mode === 'letters') {
+    if (currentWord.length) {
+      currentWord = currentWord.slice(0,-1);
+      renderWord();
+    } else if (sentence.length) {
+      const last = sentence.pop();
+      if (!last.isWord) currentWord = last.text;
+      renderWord(); renderSentence();
+    }
+  } else {
+    if (sentence.length) { sentence.pop(); renderSentence(); }
   }
 };
 
 window.clearAll = () => {
-  currentWord = '';
-  sentence    = [];
-  renderWord();
-  renderSentence();
+  currentWord = ''; sentence = [];
+  renderWord(); renderSentence();
 };
 
 window.speakSentence = () => {
-  const words = [...sentence];
-  if (currentWord.trim()) words.push(currentWord);
-  const text = words.join(' ').trim();
+  const parts = sentence.map(s => s.text);
+  if (currentWord.trim()) parts.push(currentWord);
+  const text = parts.join(' ').trim();
   if (!text) return;
-  const utt  = new SpeechSynthesisUtterance(text);
-  utt.lang  = 'en-US';
-  utt.rate  = 0.92;
-  utt.pitch = 1.05;
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = 'en-US'; utt.rate = 0.92; utt.pitch = 1.05;
   speechSynthesis.cancel();
   speechSynthesis.speak(utt);
 };
+
+function speakWord(word) {
+  const utt = new SpeechSynthesisUtterance(word);
+  utt.lang = 'en-US'; utt.rate = 0.95;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(utt);
+}
 
 init();
 </script>
